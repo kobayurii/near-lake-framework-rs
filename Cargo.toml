@@ -8,7 +8,7 @@ categories = ["asynchronous", "api-bindings", "network-programming"]
 keywords = ["near", "near-lake", "near-indexer"]
 authors = ["Near Inc <hello@nearprotocol.com>"]
 edition = "2021"
-rust-version = "1.75.0"
+rust-version = "1.77.0"
 
 # cargo-workspaces
 [workspace.metadata.workspaces]
@@ -32,7 +32,7 @@ tokio = { version = "1.35.1", features = ["sync", "time", "rt", "macros"] }
 tokio-stream = { version = "0.1.14" }
 tracing = "0.1.40"
 
-near-indexer-primitives = { git = 'https://github.com/kobayurii/nearcore.git', branch = "1.39.1-fork" }
+near-indexer-primitives = { git = 'https://github.com/kobayurii/nearcore.git', branch = "1.40.0-fork" }
 
 [dev-dependencies]
 aws-smithy-http = "0.60.3"
