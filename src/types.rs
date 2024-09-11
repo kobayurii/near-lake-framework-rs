@@ -18,12 +18,9 @@ pub type BlockHeight = u64;
 #[derive(Default, Builder, Debug)]
 #[builder(pattern = "owned")]
 pub struct LakeConfig {
-    /// AWS S3 Bucket name
+    /// Fastnear endpoint
     #[builder(setter(into))]
-    pub(crate) s3_bucket_name: String,
-    /// AWS S3 Region name
-    #[builder(setter(into))]
-    pub s3_region_name: String,
+    pub fast_near_endpoint: String,
     /// Defines the block height to start indexing from
     pub(crate) start_block_height: u64,
     /// Custom aws_sdk_s3::config::Config
@@ -70,8 +67,7 @@ impl LakeConfigBuilder {
     /// # }
     /// ```
     pub fn mainnet(mut self) -> Self {
-        self.s3_bucket_name = Some("near-lake-data-mainnet".to_string());
-        self.s3_region_name = Some("eu-central-1".to_string());
+        self.fast_near_endpoint = Some("https://mainnet.neardata.xyz".to_string());
         self
     }
 
@@ -88,51 +84,8 @@ impl LakeConfigBuilder {
     /// # }
     /// ```
     pub fn testnet(mut self) -> Self {
-        self.s3_bucket_name = Some("near-lake-data-testnet".to_string());
-        self.s3_region_name = Some("eu-central-1".to_string());
+        self.fast_near_endpoint = Some("https://testnet.neardata.xyz".to_string());
         self
     }
 
-    /// Shortcut to set up [LakeConfigBuilder::s3_bucket_name] for betanet
-    /// ```
-    /// use near_lake_framework::LakeConfigBuilder;
-    ///
-    /// # async fn main() {
-    ///    let config = LakeConfigBuilder::default()
-    ///        .betanet()
-    ///        .start_block_height(82422587)
-    ///        .build()
-    ///        .expect("Failed to build LakeConfig");
-    /// # }
-    /// ```
-    pub fn betanet(mut self) -> Self {
-        self.s3_bucket_name = Some("near-lake-data-betanet".to_string());
-        self.s3_region_name = Some("us-east-1".to_string());
-        self
-    }
-}
-
-#[allow(clippy::enum_variant_names)]
-#[derive(thiserror::Error, Debug)]
-pub enum LakeError<E> {
-    #[error("Failed to parse structure from JSON: {error_message:?}")]
-    ParseError {
-        #[from]
-        error_message: serde_json::Error,
-    },
-    #[error("AWS S3 error: {error:?}")]
-    AwsError {
-        #[from]
-        error: aws_sdk_s3::error::SdkError<E>,
-    },
-    #[error("Failed to convert integer: {error:?}")]
-    IntConversionError {
-        #[from]
-        error: std::num::TryFromIntError,
-    },
-    #[error("AWS Smithy byte_stream error: {error:?}")]
-    AwsSmithyError {
-        #[from]
-        error: aws_smithy_types::byte_stream::error::Error,
-    },
 }
