@@ -1,88 +1,168 @@
 use async_trait::async_trait;
 use std::str::FromStr;
 
+// #[async_trait]
+// pub trait S3Client {
+//     async fn get_object(
+//         &self,
+//         bucket: &str,
+//         prefix: &str,
+//     ) -> Result<
+//         aws_sdk_s3::operation::get_object::GetObjectOutput,
+//         aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
+//     >;
+//
+//     async fn list_objects(
+//         &self,
+//         bucket: &str,
+//         start_after: &str,
+//     ) -> Result<
+//         aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Output,
+//         aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>,
+//     >;
+// }
+
 #[async_trait]
-pub trait S3Client {
+pub trait Client {
     async fn get_object(
         &self,
-        bucket: &str,
-        prefix: &str,
-    ) -> Result<
-        aws_sdk_s3::operation::get_object::GetObjectOutput,
-        aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
-    >;
+        block_height: crate::types::BlockHeight,
+    ) -> anyhow::Result<near_indexer_primitives::StreamerMessage>;
 
     async fn list_objects(
         &self,
-        bucket: &str,
-        start_after: &str,
-    ) -> Result<
-        aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Output,
-        aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>,
-    >;
+        start_after: crate::types::BlockHeight,
+    ) -> anyhow::Result<Vec<crate::types::BlockHeight>>;
 }
+
+// #[derive(Clone, Debug)]
+// pub struct LakeS3Client {
+//     s3: aws_sdk_s3::Client,
+// }
 
 #[derive(Clone, Debug)]
-pub struct LakeS3Client {
-    s3: aws_sdk_s3::Client,
+pub struct FastNearClient {
+    endpoint: String,
+    client: reqwest::Client,
 }
 
-impl LakeS3Client {
-    pub fn new(s3: aws_sdk_s3::Client) -> Self {
-        Self { s3 }
+// impl LakeS3Client {
+//     pub fn new(s3: aws_sdk_s3::Client) -> Self {
+//         Self { s3 }
+//     }
+// }
+
+impl FastNearClient {
+    pub fn new(endpoint: String) -> Self {
+        Self { endpoint, client: reqwest::Client::new() }
     }
 }
+//
+// #[async_trait]
+// impl S3Client for LakeS3Client {
+//     async fn get_object(
+//         &self,
+//         bucket: &str,
+//         prefix: &str,
+//     ) -> Result<
+//         aws_sdk_s3::operation::get_object::GetObjectOutput,
+//         aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
+//     > {
+//         Ok(self
+//             .s3
+//             .get_object()
+//             .bucket(bucket)
+//             .key(prefix)
+//             .request_payer(aws_sdk_s3::types::RequestPayer::Requester)
+//             .send()
+//             .await?)
+//     }
+//
+//     async fn list_objects(
+//         &self,
+//         bucket: &str,
+//         start_after: &str,
+//     ) -> Result<
+//         aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Output,
+//         aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>,
+//     > {
+//         Ok(self
+//             .s3
+//             .list_objects_v2()
+//             .max_keys(1000) // 1000 is the default and max value for this parameter
+//             .delimiter("/".to_string())
+//             .start_after(start_after)
+//             .request_payer(aws_sdk_s3::types::RequestPayer::Requester)
+//             .bucket(bucket)
+//             .send()
+//             .await?)
+//     }
+// }
+
 
 #[async_trait]
-impl S3Client for LakeS3Client {
+impl Client for FastNearClient {
     async fn get_object(
         &self,
-        bucket: &str,
-        prefix: &str,
-    ) -> Result<
-        aws_sdk_s3::operation::get_object::GetObjectOutput,
-        aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
-    > {
-        Ok(self
-            .s3
-            .get_object()
-            .bucket(bucket)
-            .key(prefix)
-            .request_payer(aws_sdk_s3::types::RequestPayer::Requester)
-            .send()
-            .await?)
+        block_height: crate::types::BlockHeight,
+    ) -> anyhow::Result<aws_sdk_s3::operation::get_object::GetObjectOutput> {
+        Ok(self.client.get(&format!("{}/v0/blocks/{}", self.endpoint, block_height)).await?)
     }
 
     async fn list_objects(
         &self,
-        bucket: &str,
-        start_after: &str,
-    ) -> Result<
-        aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Output,
-        aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>,
-    > {
-        Ok(self
-            .s3
-            .list_objects_v2()
-            .max_keys(1000) // 1000 is the default and max value for this parameter
-            .delimiter("/".to_string())
-            .start_after(start_after)
-            .request_payer(aws_sdk_s3::types::RequestPayer::Requester)
-            .bucket(bucket)
-            .send()
-            .await?)
+        start_after: crate::types::BlockHeight,
+    ) -> anyhow::Result<
+        aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Output> {
+        Ok(self.client.get(&format!("{}/v0/blocks?start_after={}", self.endpoint, start_after)).await?)
     }
 }
+
+// /// Queries the list of the objects in the bucket, grouped by "/" delimiter.
+// /// Returns the list of block heights that can be fetched
+// pub async fn list_block_heights(
+//     lake_s3_client: &impl Client,
+//     s3_bucket_name: &str,
+//     start_from_block_height: crate::types::BlockHeight,
+// ) -> Result<
+//     Vec<crate::types::BlockHeight>,
+//     crate::types::LakeError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>,
+// > {
+//     tracing::debug!(
+//         target: crate::LAKE_FRAMEWORK,
+//         "Fetching block heights from S3, after #{}...",
+//         start_from_block_height
+//     );
+//     let response = lake_s3_client
+//         .list_objects(s3_bucket_name, &format!("{:0>12}", start_from_block_height))
+//         .await?;
+//
+//     Ok(match response.common_prefixes {
+//         None => vec![],
+//         Some(common_prefixes) => common_prefixes
+//             .into_iter()
+//             .filter_map(|common_prefix| common_prefix.prefix)
+//             .collect::<Vec<String>>()
+//             .into_iter()
+//             .filter_map(|prefix_string| {
+//                 prefix_string
+//                     .split('/')
+//                     .next()
+//                     .map(u64::from_str)
+//                     .and_then(|num| num.ok())
+//             })
+//             .collect(),
+//     })
+// }
 
 /// Queries the list of the objects in the bucket, grouped by "/" delimiter.
 /// Returns the list of block heights that can be fetched
 pub async fn list_block_heights(
-    lake_s3_client: &impl S3Client,
+    lake_s3_client: &impl Client,
     s3_bucket_name: &str,
     start_from_block_height: crate::types::BlockHeight,
-) -> Result<
-    Vec<crate::types::BlockHeight>,
-    crate::types::LakeError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>,
+) -> anyhow::Result<
+    Vec<crate::types::BlockHeight>
 > {
     tracing::debug!(
         target: crate::LAKE_FRAMEWORK,
@@ -90,25 +170,9 @@ pub async fn list_block_heights(
         start_from_block_height
     );
     let response = lake_s3_client
-        .list_objects(s3_bucket_name, &format!("{:0>12}", start_from_block_height))
+        .list_objects(start_from_block_height)
         .await?;
-
-    Ok(match response.common_prefixes {
-        None => vec![],
-        Some(common_prefixes) => common_prefixes
-            .into_iter()
-            .filter_map(|common_prefix| common_prefix.prefix)
-            .collect::<Vec<String>>()
-            .into_iter()
-            .filter_map(|prefix_string| {
-                prefix_string
-                    .split('/')
-                    .next()
-                    .map(u64::from_str)
-                    .and_then(|num| num.ok())
-            })
-            .collect(),
-    })
+    Ok(response)
 }
 
 /// By the given block height gets the objects:
@@ -117,7 +181,7 @@ pub async fn list_block_heights(
 /// Reads the content of the objects and parses as a JSON.
 /// Returns the result in `near_indexer_primitives::StreamerMessage`
 pub(crate) async fn fetch_streamer_message(
-    lake_s3_client: &impl S3Client,
+    lake_s3_client: &impl Client,
     s3_bucket_name: &str,
     block_height: crate::types::BlockHeight,
 ) -> Result<
