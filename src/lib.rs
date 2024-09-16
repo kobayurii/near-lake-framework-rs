@@ -288,7 +288,7 @@ pub fn streamer(
 }
 
 fn stream_block_heights<'a: 'b, 'b>(
-    lake_s3_client: &'a s3_fetchers::LakeS3Client,
+    lake_s3_client: &'a s3_fetchers::FastNearClient,
     s3_bucket_name: &'a str,
     mut start_from_block_height: crate::types::BlockHeight,
 ) -> impl futures::Stream<Item = u64> + 'b {
@@ -384,16 +384,16 @@ async fn start(
 ) -> anyhow::Result<()> {
     let mut start_from_block_height = config.start_block_height;
 
-    let s3_client = if let Some(config) = config.s3_config {
-        aws_sdk_s3::Client::from_conf(config)
-    } else {
-        let aws_config = aws_config::from_env().load().await;
-        let s3_config = aws_sdk_s3::config::Builder::from(&aws_config)
-            .region(aws_types::region::Region::new(config.s3_region_name))
-            .build();
-        aws_sdk_s3::Client::from_conf(s3_config)
-    };
-    let lake_s3_client = s3_fetchers::LakeS3Client::new(s3_client.clone());
+    // let s3_client = if let Some(config) = config.s3_config {
+    //     aws_sdk_s3::Client::from_conf(config)
+    // } else {
+    //     let aws_config = aws_config::from_env().load().await;
+    //     let s3_config = aws_sdk_s3::config::Builder::from(&aws_config)
+    //         .region(aws_types::region::Region::new(config.s3_region_name))
+    //         .build();
+    //     aws_sdk_s3::Client::from_conf(s3_config)
+    // };
+    let lake_s3_client = s3_fetchers::FastNearClient::new("https://mainnet.neardata.xyz".to_string());
 
     let mut last_processed_block_hash: Option<near_indexer_primitives::CryptoHash> = None;
 
@@ -449,6 +449,15 @@ async fn start(
                 );
                 err
             })?;
+            let streamer_message = if let Some(streamer_message) = streamer_message {
+                streamer_message
+            } else {
+                tracing::warn!(
+                    target: LAKE_FRAMEWORK,
+                    "Received a None StreamerMessage. Skipping..."
+                );
+                continue;
+            };
 
             tracing::debug!(
                 target: LAKE_FRAMEWORK,
