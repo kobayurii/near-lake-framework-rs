@@ -32,7 +32,7 @@ tokio = { version = "1.35.1", features = ["sync", "time", "rt", "macros"] }
 tokio-stream = { version = "0.1.14" }
 tracing = "0.1.40"
 
-near-indexer-primitives = { git = 'https://github.com/kobayurii/nearcore.git', branch = "2.1.1-fork" }
+near-indexer-primitives = { git = 'https://github.com/kobayurii/nearcore.git', branch = "2.2.0-fork" }
 
 [dev-dependencies]
 aws-smithy-http = "0.60.3"
