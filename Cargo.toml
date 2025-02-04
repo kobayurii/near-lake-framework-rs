@@ -33,7 +33,7 @@ tokio = { version = "1.35.1", features = ["sync", "time", "rt", "macros"] }
 tokio-stream = { version = "0.1.14" }
 tracing = "0.1.40"
 
-near-indexer-primitives = "0.28.0"
+near-indexer-primitives = { git = "https://github.com/near/nearcore", rev = "27974494a5f9f2fd3e534456dbf0bbe001bff1bd" }
 
 [lib]
 doctest = false
