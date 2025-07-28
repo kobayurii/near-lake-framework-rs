@@ -34,7 +34,7 @@ tokio-stream = { version = "0.1.14" }
 tracing = "0.1.40"
 url = "2.5.4"
 
-near-indexer-primitives = "0.30.0-rc.1"
+near-indexer-primitives = { git = "https://github.com/kobayurii/nearcore", branch = "fork/2.6.5" }
 
 [lib]
 doctest = false
